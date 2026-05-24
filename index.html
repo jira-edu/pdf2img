@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>PDF to JPG/PNG Converter | Safe Client-Side</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e9edf2 100%);
+            min-height: 100vh;
+            padding: 2rem 1.5rem;
+            color: #1e293b;
+            position: relative;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(2px);
+            border-radius: 2rem;
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.15);
+            padding: 2rem 2rem 2.5rem;
+            transition: all 0.2s;
+        }
+
+        h1 {
+            font-weight: 700;
+            font-size: 1.9rem;
+            background: linear-gradient(120deg, #0f172a, #2563eb);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .sub {
+            color: #475569;
+            margin-top: 8px;
+            margin-bottom: 28px;
+            border-left: 4px solid #3b82f6;
+            padding-left: 16px;
+            font-weight: 500;
+        }
+
+        .card {
+            background: white;
+            border-radius: 1.5rem;
+            padding: 1.6rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.03);
+            border: 1px solid #e2e8f0;
+        }
+
+        .upload-area {
+            border: 2px dashed #cbd5e1;
+            border-radius: 1.5rem;
+            padding: 1.8rem 1rem;
+            text-align: center;
+            transition: all 0.2s;
+            background: #fefefe;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            border-color: #3b82f6;
+            background: #f8fafc;
+        }
+
+        .file-label {
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: #2563eb;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 60px;
+            font-weight: 600;
+            transition: 0.2s;
+            font-size: 0.95rem;
+        }
+
+        .file-label:hover {
+            background: #1d4ed8;
+            transform: scale(1.01);
+        }
+
+        #fileInfo {
+            margin-top: 18px;
+            font-size: 0.85rem;
+            background: #f1f5f9;
+            padding: 10px 16px;
+            border-radius: 40px;
+            display: inline-block;
+        }
+
+        .quality-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 20px;
+            margin: 1rem 0 1rem 0;
+        }
+
+        .quality-control {
+            flex: 2;
+            min-width: 180px;
+        }
+
+        label {
+            font-weight: 600;
+            margin-right: 10px;
+        }
+
+        input[type="range"] {
+            width: 200px;
+            vertical-align: middle;
+            margin: 0 10px;
+        }
+
+        .format-group {
+            display: flex;
+            gap: 20px;
+            background: #f8fafc;
+            padding: 12px 18px;
+            border-radius: 60px;
+        }
+
+        .format-group label {
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        button {
+            background: #0f172a;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 60px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: white;
+            cursor: pointer;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        button:active {
+            transform: scale(0.97);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            box-shadow: 0 2px 6px rgba(37,99,235,0.2);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #1d4ed8;
+        }
+
+        .preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 1.2rem;
+            margin-top: 1.8rem;
+        }
+
+        .preview-card {
+            background: white;
+            border-radius: 1rem;
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+            transition: 0.1s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+        }
+
+        .preview-card img {
+            width: 100%;
+            height: 140px;
+            object-fit: cover;
+            background: #f1f5f9;
+            display: block;
+        }
+
+        .preview-info {
+            padding: 8px 10px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            background: #ffffff;
+            border-top: 1px solid #eef2ff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .download-single {
+            background: none;
+            color: #2563eb;
+            font-size: 0.7rem;
+            padding: 4px 8px;
+            box-shadow: none;
+            background: #eef2ff;
+            border-radius: 30px;
+        }
+
+        .download-all {
+            margin-top: 1rem;
+            background: #0f172a;
+        }
+
+        .alert-danger {
+            background: #fee2e2;
+            color: #b91c1c;
+            border-left: 5px solid #ef4444;
+            padding: 12px 18px;
+            border-radius: 1rem;
+            margin-top: 15px;
+            font-weight: 500;
+        }
+
+        .footer-note {
+            text-align: center;
+            font-size: 0.75rem;
+            margin-top: 2rem;
+            color: #5b6e8c;
+        }
+
+        .main-footer {
+            text-align: center;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #e2e8f0;
+            font-size: 0.85rem;
+            color: #64748b;
+        }
+
+        .main-footer i {
+            margin: 0 4px;
+        }
+
+        .copyright {
+            font-weight: 500;
+            letter-spacing: 0.3px;
+        }
+
+        hr {
+            margin: 20px 0;
+            border-color: #e2e8f0;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1><i class="fas fa-file-pdf"></i> PDF → JPG / PNG</h1>
+    <div class="sub">แปลง PDF เป็นภาพคุณภาพสูง • ไม่มีการอัปโหลดเซิร์ฟเวอร์ • ปลอดภัย 100%</div>
+
+    <div class="card">
+        <div class="upload-area" id="dropZone">
+            <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: #3b82f6; margin-bottom: 10px; display: block;"></i>
+            <p style="margin-bottom: 12px;">ลากไฟล์ PDF มาวางที่นี่ หรือคลิกเพื่อเลือก</p>
+            <input type="file" id="pdfInput" accept="application/pdf" style="display: none;">
+            <button type="button" id="selectFileBtn" class="file-label"><i class="fas fa-folder-open"></i> เลือกไฟล์ PDF</button>
+            <div id="fileInfo"></div>
+            <div id="validationAlert"></div>
+        </div>
+
+        <div class="quality-row">
+            <div class="quality-control">
+                <label><i class="fas fa-chart-line"></i> ปรับแต่งคุณภาพ (%): </label>
+                <input type="range" id="qualitySlider" min="10" max="100" value="85">
+                <span id="qualityValue" style="font-weight: 700; min-width: 45px; display: inline-block;">85%</span>
+                <div style="font-size: 0.7rem; color:#4b5563;">ยิ่งค่าสูงไฟล์ใหญ่แต่คมชัด</div>
+            </div>
+            <div class="format-group">
+                <label><i class="far fa-image"></i> รูปแบบไฟล์ภาพ:</label>
+                <label><input type="radio" name="imgFormat" value="jpg" checked> JPEG (.jpg)</label>
+                <label><input type="radio" name="imgFormat" value="png"> PNG (.png)</label>
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <button id="convertBtn" disabled><i class="fas fa-sync-alt"></i> แปลง PDF เป็นภาพ</button>
+            <button id="downloadAllBtn" disabled class="download-all"><i class="fas fa-download"></i> ดาวน์โหลดภาพทั้งหมด (.zip)</button>
+        </div>
+    </div>
+
+    <div id="resultArea" style="display: none;">
+        <h3><i class="fas fa-images"></i> ภาพตัวอย่าง (คลิกปุ่มใต้ภาพเพื่อดาวน์โหลดทีละไฟล์)</h3>
+        <div id="imageGrid" class="preview-grid"></div>
+    </div>
+    
+    <div class="footer-note">
+        <i class="fas fa-shield-alt"></i> ข้อมูลทั้งหมดถูกประมวลผลในเบราว์เซอร์ของคุณเท่านั้น ไม่มีการส่งหรือเก็บไฟล์ใดๆ
+    </div>
+    
+    <div class="main-footer">
+        <i class="far fa-copyright"></i> <span class="copyright">Jira-Edu 2026</span> 
+        <span style="margin: 0 8px">•</span> 
+        <i class="fas fa-lock"></i> 100% Client-side
+        <span style="margin: 0 8px">•</span>
+        <i class="fas fa-code-branch"></i> รองรับ PDF หลายหน้า
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+<script>
+    
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+    // DOM elements
+    const pdfInput = document.getElementById('pdfInput');
+    const selectBtn = document.getElementById('selectFileBtn');
+    const dropZone = document.getElementById('dropZone');
+    const fileInfoDiv = document.getElementById('fileInfo');
+    const validationAlert = document.getElementById('validationAlert');
+    const convertBtn = document.getElementById('convertBtn');
+    const downloadAllBtn = document.getElementById('downloadAllBtn');
+    const qualitySlider = document.getElementById('qualitySlider');
+    const qualityValueSpan = document.getElementById('qualityValue');
+    const resultArea = document.getElementById('resultArea');
+    const imageGrid = document.getElementById('imageGrid');
+
+    let currentPdfFile = null;      // เก็บ File object ที่ผ่านการตรวจสอบ
+    let currentImageBlobs = [];      // array ของ { blob, pageNum, format, width?, height? }
+    let currentFormat = 'jpg';       // ค่าเริ่มต้น jpg
+
+    // อัปเดตคุณภาพแสดงผล
+    qualitySlider.addEventListener('input', (e) => {
+        qualityValueSpan.innerText = e.target.value + '%';
+    });
+
+    // Alert
+    function showAlert(message, isError = true) {
+        validationAlert.innerHTML = `<div class="alert-danger"><i class="fas fa-exclamation-triangle"></i> ${message}</div>`;
+        if (!isError) {
+            
+        }
+        setTimeout(() => {
+            if (validationAlert.innerHTML.includes(message)) {
+                if(validationAlert.innerHTML.indexOf(message) !== -1)
+                    validationAlert.innerHTML = '';
+            }
+        }, 4000);
+    }
+
+    function clearValidation() {
+        validationAlert.innerHTML = '';
+    }
+
+    
+    function validatePDFFile(file) {
+        if (!file) return false;
+        // 1. ตรวจสอบ MIME type
+        if (file.type !== 'application/pdf') {
+            showAlert('❌ ไฟล์ไม่ใช่ PDF! ตรวจสอบแล้วพบ MIME type: ' + file.type + '  กรุณาอัปโหลดไฟล์ PDF เท่านั้น');
+            return false;
+        }
+        // 2. ตรวจสอบนามสกุล
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (ext !== 'pdf') {
+            showAlert('กรุณาอัปโหลดไฟล์ PDF เท่านั้น');
+            return false;
+        }
+        // 3. ตรวจสอบเพิ่มเติมด้วย PDF header (%PDF-)
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const arr = new Uint8Array(e.target.result);
+                if (arr.length >= 5 && arr[0] === 0x25 && arr[1] === 0x50 && arr[2] === 0x44 && arr[3] === 0x46 && arr[4] === 0x2D) {
+                    resolve(true);
+                } else {
+                    showAlert('ไม่รองนับไฟล์นี้');
+                    resolve(false);
+                }
+            };
+            reader.onerror = () => {
+                showAlert('ไม่สามารถอ่านไฟล์ได้');
+                resolve(false);
+            };
+            reader.readAsArrayBuffer(file.slice(0, 10));
+        });
+    }
+
+    // เมื่อเลือกไฟล์ใหม่
+    async function handleFileSelection(file) {
+        clearValidation();
+        if (!file) return;
+        
+        if (file.type !== 'application/pdf') {
+            showAlert('กรุณาเลือกไฟล์ PDF เท่านั้น (MIME ไม่ตรง)');
+            convertBtn.disabled = true;
+            downloadAllBtn.disabled = true;
+            currentPdfFile = null;
+            fileInfoDiv.innerHTML = '';
+            return;
+        }
+        
+        fileInfoDiv.innerHTML = `<i class="fas fa-file-pdf"></i> ไฟล์: ${file.name} (${(file.size / 1024).toFixed(1)} KB) กำลังตรวจสอบลายเซ็น PDF...`;
+        convertBtn.disabled = true;
+        downloadAllBtn.disabled = true;
+        
+        const isValid = await validatePDFFile(file);
+        if (isValid) {
+            currentPdfFile = file;
+            fileInfoDiv.innerHTML = `<i class="fas fa-check-circle" style="color:#16a34a;"></i> ไฟล์ PDF ถูกต้อง: ${file.name} (${(file.size / 1024).toFixed(1)} KB) พร้อมแปลง`;
+            convertBtn.disabled = false;
+            resultArea.style.display = 'none';
+            imageGrid.innerHTML = '';
+            currentImageBlobs = [];
+            downloadAllBtn.disabled = true;
+        } else {
+            currentPdfFile = null;
+            fileInfoDiv.innerHTML = `<i class="fas fa-times-circle" style="color:#dc2626;"></i> ไฟล์ไม่ถูกต้อง (ไม่ใช่ PDF จริง)`;
+            convertBtn.disabled = true;
+            downloadAllBtn.disabled = true;
+        }
+    }
+
+    // Event สำหรับ select ปุ่ม
+    selectBtn.addEventListener('click', () => {
+        pdfInput.click();
+    });
+    pdfInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            handleFileSelection(e.target.files[0]);
+        }
+    });
+
+    // Drag & Drop
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#3b82f6';
+        dropZone.style.background = '#eff6ff';
+    });
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.style.borderColor = '#cbd5e1';
+        dropZone.style.background = '#fefefe';
+    });
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#cbd5e1';
+        dropZone.style.background = '#fefefe';
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            handleFileSelection(files[0]);
+        }
+    });
+
+    // รับค่าฟอร์แมตปัจจุบัน
+    const radioFormat = document.querySelectorAll('input[name="imgFormat"]');
+    radioFormat.forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                currentFormat = e.target.value;
+            }
+        });
+    });
+
+    // ฟังก์ชันหลักแปลง PDF -> รายการภาพ
+    async function convertPDFToImages(pdfFile, qualityPercent, formatType) {
+        const quality = qualityPercent / 100;
+        try {
+            const arrayBuffer = await pdfFile.arrayBuffer();
+            const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer, useSystemFonts: true });
+            const pdfDoc = await loadingTask.promise;
+            const totalPages = pdfDoc.numPages;
+            const images = [];
+            
+            for (let i = 1; i <= totalPages; i++) {
+                const page = await pdfDoc.getPage(i);
+                const viewport = page.getViewport({ scale: 1.5 });
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                
+                const renderContext = {
+                    canvasContext: context,
+                    viewport: viewport,
+                    background: 'white',
+                };
+                await page.render(renderContext).promise;
+                
+                let blob = null;
+                if (formatType === 'jpg') {
+                    blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
+                } else {
+                    blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+                }
+                if (!blob) throw new Error(`สร้างภาพหน้าที ${i} ล้มเหลว`);
+                images.push({
+                    pageNum: i,
+                    blob: blob,
+                    format: formatType,
+                    width: canvas.width,
+                    height: canvas.height
+                });
+            }
+            return { images, totalPages };
+        } catch (err) {
+            console.error(err);
+            throw new Error('การแปลง PDF ล้มเหลว: ' + err.message);
+        }
+    }
+
+    // แสดงภาพตัวอย่าง
+    function displayImagesPreview(imagesArray) {
+        imageGrid.innerHTML = '';
+        if (!imagesArray.length) return;
+        
+        imagesArray.forEach((imgObj, idx) => {
+            const card = document.createElement('div');
+            card.className = 'preview-card';
+            const imgUrl = URL.createObjectURL(imgObj.blob);
+            const imgEl = document.createElement('img');
+            imgEl.src = imgUrl;
+            imgEl.alt = `page ${imgObj.pageNum}`;
+            
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'preview-info';
+            infoDiv.innerHTML = `<span>หน้า ${imgObj.pageNum}</span>
+                                 <button class="download-single" data-index="${idx}"><i class="fas fa-download"></i> ดาวน์โหลด</button>`;
+            card.appendChild(imgEl);
+            card.appendChild(infoDiv);
+            imageGrid.appendChild(card);
+        });
+        
+        document.querySelectorAll('.download-single').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const idx = parseInt(btn.getAttribute('data-index'));
+                if (!isNaN(idx) && currentImageBlobs[idx]) {
+                    const target = currentImageBlobs[idx];
+                    const ext = target.format === 'jpg' ? 'jpg' : 'png';
+                    const filename = `pdf_page_${target.pageNum}.${ext}`;
+                    saveAs(target.blob, filename);
+                }
+            });
+        });
+        
+        resultArea.style.display = 'block';
+        downloadAllBtn.disabled = false;
+    }
+
+    // สร้าง zip รวมทุกภาพ
+    async function downloadAllAsZip(imagesArray, baseFileName) {
+        try {
+            const zip = new JSZip();
+            for (const img of imagesArray) {
+                const ext = img.format === 'jpg' ? 'jpg' : 'png';
+                const fileName = `${baseFileName}_page_${img.pageNum}.${ext}`;
+                zip.file(fileName, img.blob);
+            }
+            const content = await zip.generateAsync({ type: 'blob' });
+            saveAs(content, `${baseFileName}_images.zip`);
+        } catch (err) {
+            showAlert('เกิดข้อผิดพลาดในการสร้าง ZIP: ' + err.message);
+        }
+    }
+
+    // Event เริ่มแปลง
+    convertBtn.addEventListener('click', async () => {
+        if (!currentPdfFile) {
+            showAlert('กรุณาเลือกไฟล์ PDF ที่ถูกต้องก่อน');
+            return;
+        }
+        
+        convertBtn.disabled = true;
+        downloadAllBtn.disabled = true;
+        const originalBtnText = convertBtn.innerHTML;
+        convertBtn.innerHTML = '<span class="loading"></span> กำลังแปลง PDF ...';
+        
+        const qualityVal = parseInt(qualitySlider.value);
+        const format = currentFormat;
+        
+        try {
+            const { images, totalPages } = await convertPDFToImages(currentPdfFile, qualityVal, format);
+            if (images.length === 0) throw new Error('ไม่สามารถสร้างภาพได้');
+            currentImageBlobs = images;
+            displayImagesPreview(images);
+            resultArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } catch (err) {
+            showAlert('เกิดความผิดพลาด: ' + err.message);
+            currentImageBlobs = [];
+            resultArea.style.display = 'none';
+        } finally {
+            convertBtn.disabled = false;
+            convertBtn.innerHTML = originalBtnText;
+            if (currentImageBlobs.length > 0) downloadAllBtn.disabled = false;
+            else downloadAllBtn.disabled = true;
+        }
+    });
+    
+    // ดาวน์โหลดทั้งหมด
+    downloadAllBtn.addEventListener('click', async () => {
+        if (!currentImageBlobs.length) {
+            showAlert('ไม่มีภาพให้ดาวน์โหลด กรุณาแปลง PDF ก่อน');
+            return;
+        }
+        let baseName = 'pdf_export';
+        if (currentPdfFile) {
+            baseName = currentPdfFile.name.replace(/\.pdf$/i, '');
+        }
+        downloadAllBtn.disabled = true;
+        downloadAllBtn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> กำลังสร้าง ZIP ...';
+        await downloadAllAsZip(currentImageBlobs, baseName);
+        downloadAllBtn.disabled = false;
+        downloadAllBtn.innerHTML = '<i class="fas fa-download"></i> ดาวน์โหลดทั้งหมด (.zip)';
+    });
+    
+    convertBtn.disabled = true;
+    downloadAllBtn.disabled = true;
+    qualityValueSpan.innerText = qualitySlider.value + '%';
+</script>
+</body>
+</html>
